@@ -1,0 +1,18 @@
+# Model weights stay on disk, not in git (GitHub rejects files over 100 MB)
+*.gguf
+*.safetensors
+*.bin
+.DS_Store
+
+# Participant data: never commit
+athena/study/private/
+
+# Voice samples and generated audio: never commit
+athena/voice/private/
+*.wav
+*.m4a
+*.mp3
+
+# The ambient video is someone else's footage: keep it local, never publish
+athena/space/private/
+*.mp4

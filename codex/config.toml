@@ -1,0 +1,11 @@
+# Add this to ~/.codex/config.toml, then run:  codex --profile local
+
+[model_providers.llamacpp]
+name = "llama.cpp"
+base_url = "http://127.0.0.1:8080/v1"
+wire_api = "responses"
+
+[profiles.local]
+model = "qwen3.5-9b"
+model_provider = "llamacpp"
+model_context_window = 32768

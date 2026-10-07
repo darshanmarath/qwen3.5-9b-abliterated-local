@@ -1,0 +1,46 @@
+# Athena — add this to ~/.codex/config.toml, below the llamacpp provider
+# block from ../codex/config.toml. Then run:  codex --profile athena
+#
+# Each server lists only the tools Athena's skills use. Every tool
+# definition takes room in the model's context window, and a 9B model has
+# little to spare. Add a tool to a list only when a skill needs it.
+
+[profiles.athena]
+model = "qwen3.5-9b"
+model_provider = "llamacpp"
+model_context_window = 32768
+
+[mcp_servers.mobbin]
+url = "https://api.mobbin.com/mcp"
+enabled_tools = ["search_screens", "search_flows", "search_sections"]
+
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"
+enabled_tools = [
+  "whoami",
+  "get_figma_skill",
+  "get_metadata",
+  "get_screenshot",
+  "get_design_context",
+  "get_variable_defs",
+  "search_design_system",
+  "create_new_file",
+  "use_figma",
+  "generate_diagram",
+]
+
+[mcp_servers.higgsfield]
+url = "https://mcp.higgsfield.ai/mcp"
+tool_timeout_sec = 120
+enabled_tools = [
+  "balance",
+  "models_explore",
+  "media_upload",
+  "media_confirm",
+  "generate_image",
+  "generate_video",
+  "jobs_wait",
+  "show_generation_by_ids",
+  "upscale_image",
+  "remove_background",
+]

@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Athena's space</title>
+<style>
+  :root {
+    --ink: #f4f1ea;
+    --ink-soft: rgba(244, 241, 234, 0.72);
+    --ink-faint: rgba(244, 241, 234, 0.5);
+    --glass: rgba(16, 18, 26, 0.62);
+    --glass-strong: rgba(16, 18, 26, 0.82);
+    --line: rgba(244, 241, 234, 0.16);
+    --you: #f4f1ea;
+    --you-ink: #14161d;
+    --athena: #c9b8ff;
+    --hermes: #86d4ee;
+    --clio: #f0adc8;
+    --apollo: #f4e08a;
+    --hephaestus: #e2a77c;
+    --gaia: #93d3a2;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: var(--sans); color: var(--ink); background: #10121a;
+    font-size: 16px; line-height: 1.5; overflow: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  /* scenery */
+  .scenery { position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(120% 90% at 20% 10%, #3b4a7a 0%, #1d2440 45%, #10121a 100%); }
+  .scenery video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .scrim { position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(180deg, rgba(10,12,18,.35) 0%, rgba(10,12,18,.15) 30%, rgba(10,12,18,.55) 100%); }
+
+  .app { position: relative; z-index: 2; height: 100%; display: grid;
+    grid-template-columns: 208px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+
+  /* top bar */
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+  .top h1 { font-family: var(--serif); font-weight: 500; font-size: 20px; margin: 0; letter-spacing: .01em; }
+  .top .where { color: var(--ink-soft); font-size: 13px; }
+  .top .spacer { flex: 1; }
+  .pill { background: var(--glass); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; font-size: 13px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .pill:hover { background: var(--glass-strong); }
+  .pill[aria-pressed="true"] { background: var(--ink); color: #14161d; border-color: transparent; }
+
+  /* council rail */
+  .rail { padding: 8px 12px 16px 20px; overflow-y: auto; }
+  .rail h2 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint);
+    margin: 8px 0 10px 6px; font-weight: 600; }
+  .voice { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px;
+    border: 1px solid transparent; margin-bottom: 4px; }
+  .voice .name { font-family: var(--serif); font-size: 16px; line-height: 1.2; }
+  .voice .state { font-size: 12px; color: var(--ink-faint); min-height: 16px; }
+  .voice.speaking { background: var(--glass); border-color: var(--line);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .voice.speaking .state { color: var(--ink); }
+  .voice.listening .state { color: var(--ink-soft); }
+  .mark { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+    font-family: var(--serif); font-size: 16px; color: #14161d; background: var(--c); }
+  .voice.speaking .mark { box-shadow: 0 0 0 3px rgba(16,18,26,.6), 0 0 0 5px var(--c); }
+
+  /* conversation */
+  .talk { overflow-y: auto; padding: 8px 24px 24px; scroll-behavior: smooth; }
+  .col { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+  .hello { margin: 12vh auto 0; max-width: 560px; text-align: center; }
+  .hello h2 { font-family: var(--serif); font-weight: 500; font-size: 34px; line-height: 1.2; margin: 0 0 12px;
+    text-shadow: 0 2px 24px rgba(0,0,0,.45); }
+  .hello p { color: var(--ink-soft); margin: 0 0 20px; text-shadow: 0 1px 12px rgba(0,0,0,.5); }
+  .starters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+  .turn { display: flex; gap: 12px; align-items: flex-start; }
+  .turn .body { min-width: 0; flex: 1; }
+  .turn .who { font-family: var(--serif); font-size: 15px; margin: 4px 0 6px; color: var(--c); }
+  .turn .who small { font-family: var(--sans); color: var(--ink-faint); font-size: 12px; margin-left: 8px; }
+  .bubble { background: var(--glass); border: 1px solid var(--line); border-radius: 6px 18px 18px 18px;
+    padding: 12px 16px; white-space: pre-wrap; overflow-wrap: anywhere;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-left: 2px solid var(--c); }
+  .turn.you { justify-content: flex-end; }
+  .turn.you .bubble { background: var(--you); color: var(--you-ink); border: 0; border-radius: 18px 18px 6px 18px;
+    max-width: 80%; flex: none; }
+  .turn.note .bubble { border-left-color: var(--line); color: var(--ink-soft); font-size: 14px; }
+
+  /* tones: slight differences in how each voice sets its text */
+  .t-athena .bubble { font-size: 16.5px; }
+  .t-hermes .bubble { font-size: 15.5px; letter-spacing: .005em; }
+  .t-clio .bubble { font-family: var(--serif); font-size: 16.5px; }
+  .t-apollo .bubble { font-variant-numeric: tabular-nums; }
+  .t-hephaestus .bubble { font-weight: 500; }
+  .t-gaia .bubble { line-height: 1.65; }
+
+  .reviews { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .reviews li { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: baseline; }
+  .verdict { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .v-grounded { color: var(--gaia); }
+  .v-needs { color: var(--apollo); }
+  .v-aside { color: var(--ink-soft); }
+  .reviews .why { grid-column: 2; color: var(--ink-soft); font-size: 14px; }
+
+  .options { display: grid; gap: 10px; margin-top: 12px; }
+  .option { text-align: left; background: rgba(244,241,234,.07); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 14px; width: 100%; }
+  .option:hover { background: rgba(244,241,234,.14); }
+  .option b { font-family: var(--serif); font-weight: 500; font-size: 17px; display: block; margin-bottom: 4px; }
+  .option span { display: block; font-size: 14px; color: var(--ink-soft); }
+  .curious { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .curious em { font-style: normal; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--athena); font-weight: 700; display: block; margin-bottom: 2px; }
+  .dots::after { content: "…"; animation: blink 1.4s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  /* composer */
+  .compose { grid-column: 2; padding: 0 24px 20px; }
+  .compose form { max-width: 720px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end;
+    background: var(--glass-strong); border: 1px solid var(--line); border-radius: 26px; padding: 8px 8px 8px 18px;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .compose textarea { flex: 1; resize: none; background: none; border: 0; color: var(--ink); font: inherit;
+    padding: 8px 0; max-height: 140px; min-height: 24px; outline: none; }
+  .compose textarea::placeholder { color: var(--ink-faint); }
+  .send { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--ink); color: #14161d;
+    font-size: 18px; display: grid; place-items: center; }
+  .send:disabled { opacity: .4; cursor: default; }
+  .hint { max-width: 720px; margin: 8px auto 0; font-size: 12px; color: var(--ink-faint); text-align: center; }
+
+  /* drawer */
+  .drawer { position: fixed; z-index: 5; top: 0; right: 0; bottom: 0; width: min(380px, 92vw);
+    background: var(--glass-strong); border-left: 1px solid var(--line); padding: 20px;
+    backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); overflow-y: auto;
+    transform: translateX(100%); transition: transform .25s ease; }
+  .drawer.open { transform: none; }
+  .drawer h3 { font-family: var(--serif); font-weight: 500; font-size: 22px; margin: 0 0 6px; }
+  .drawer p { color: var(--ink-soft); font-size: 14px; margin: 0 0 16px; }
+  .drawer ul { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 8px; }
+  .drawer li { display: flex; gap: 8px; align-items: flex-start; background: rgba(244,241,234,.07);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+  .drawer li span { flex: 1; overflow-wrap: anywhere; }
+  .drawer li button { background: none; border: 0; color: var(--ink-faint); padding: 0 4px; }
+  .drawer label { display: block; font-size: 12px; color: var(--ink-faint); margin: 12px 0 4px; }
+  .drawer input { width: 100%; background: rgba(244,241,234,.07); border: 1px solid var(--line); color: var(--ink);
+    border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 14px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  @media (max-width: 820px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .rail { display: flex; gap: 4px; overflow-x: auto; padding: 0 16px 8px; }
+    .rail h2 { display: none; }
+    .voice { flex: none; margin: 0; }
+    .voice .state { display: none; }
+    .compose { grid-column: 1; padding: 0 16px 16px; }
+    .talk { padding: 8px 16px 16px; }
+    .top .where { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dots::after { animation: none; }
+    .drawer { transition: none; }
+    .talk { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scenery" aria-hidden="true">
+  <video id="scene" muted loop playsinline preload="auto">
+    <source src="private/ambient.mp4" type="video/mp4">
+    <source id="lastSource" src="private/ambient.webm" type="video/webm">
+  </video>
+</div>
+<div class="scrim" aria-hidden="true"></div>
+
+<div class="app">
+  <header class="top">
+    <h1>Athena's space</h1>
+    <span class="where" id="where">Local model</span>
+    <span class="spacer"></span>
+    <button class="pill" id="btnScene" aria-pressed="true" title="Play or pause the background video">Scenery on</button>
+    <button class="pill" id="btnSound" aria-pressed="false" title="Turn the video's sound on or off">Sound off</button>
+    <button class="pill" id="btnNotes">Notebook</button>
+    <button class="pill" id="btnSet">Settings</button>
+  </header>
+
+  <nav class="rail" aria-label="The council">
+    <h2>The council</h2>
+    <div id="rail"></div>
+  </nav>
+
+  <main class="talk" id="talk" aria-live="polite">
+    <div class="col" id="col">
+      <div class="hello" id="hello">
+        <h2>Nothing here has to be good yet.</h2>
+        <p>Say what you're thinking about. One voice answers at a time, each one listens to the last, and Gaia checks every suggestion before Athena brings you options.</p>
+        <div class="starters" id="starters"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="compose">
+    <form id="form">
+      <textarea id="input" rows="1" placeholder="Think out loud…" aria-label="Message the council"></textarea>
+      <button class="send" id="send" aria-label="Send">↑</button>
+    </form>
+    <div class="hint">This space only talks. It cannot send, search, open files or generate anything. Keep participants' names and answers out of it.</div>
+  </div>
+</div>
+
+<aside class="drawer" id="notes" aria-label="Athena's notebook">
+  <h3>Notebook</h3>
+  <p>What Athena has learned about you in this space. It stays in this browser. Remove anything you don't want her to keep.</p>
+  <ul id="noteList"></ul>
+  <div class="row">
+    <button class="pill" id="copyNotes">Copy all</button>
+    <button class="pill" id="clearNotes">Forget everything</button>
+    <button class="pill" data-close>Close</button>
+  </div>
+</aside>
+
+<aside class="drawer" id="settings" aria-label="Settings">
+  <h3>Settings</h3>
+  <p>Where the local model is listening. Start it with <code>~/Models/run.sh</code>.</p>
+  <label for="setUrl">Server address</label>
+  <input id="setUrl" spellcheck="false">
+  <label for="setModel">Model name</label>
+  <input id="setModel" spellcheck="false">
+  <div class="row" style="margin-top:16px">
+    <button class="pill" id="saveSet">Save</button>
+    <button class="pill" id="newTalk">Start a new conversation</button>
+    <button class="pill" data-close>Close</button>
+  </div>
+</aside>
+
+<script>
+"use strict";
+
+/* ---------- the council ---------- */
+const VOICES = {
+  Athena:     { key: "athena",     job: "Lead",        tone: "calm, curious",
+    persona: "You are Athena, the lead. Tone: calm and curious. You think in options and you ask good questions. You never give one answer dressed as a choice." },
+  Hermes:     { key: "hermes",     job: "Recruiter",   tone: "quick, warm",
+    persona: "You are Hermes, the recruiter. You think about people, outreach and timing. Tone: quick and warm. Your sentences are the shortest on the council." },
+  Clio:       { key: "clio",       job: "Interviewer", tone: "careful, exact",
+    persona: "You are Clio, the interviewer. You think about questions, wording and what people actually said. Tone: careful and exact. You prefer people's own words to a summary." },
+  Apollo:     { key: "apollo",     job: "Synthesist",  tone: "clear, analytical",
+    persona: "You are Apollo, the synthesist. You think about patterns, counts and what the evidence shows. Tone: clear and analytical. You give the number, never 'most' or 'many'." },
+  Hephaestus: { key: "hephaestus", job: "Designer",    tone: "practical",
+    persona: "You are Hephaestus, the designer. You think about what to build and how. Tone: practical and hands-on. You talk about the next concrete thing to make." },
+  Gaia:       { key: "gaia",       job: "Reviewer",    tone: "steady, kind",
+    persona: "You are Gaia, the reviewer. Every suggestion passes through you. Tone: steady and kind. You review the idea, never the voice. You never add ideas of your own." },
+};
+const SPEAKERS = ["Hermes", "Clio", "Apollo", "Hephaestus"];
+
+const GROUND_RULES = [
+  "You are one voice on Athena's council, a UX research and design team for one designer. The council runs on a small local model.",
+  "This is a safe space to think and make. Ideas are welcome before they are good.",
+  "Rules for every voice:",
+  "- Speak only as yourself. Never write another voice's lines. Do not start with your name.",
+  "- Listen first: say in one line what you heard from the voice before you, then add your own point. You may disagree, and you say why.",
+  "- Never dismiss an idea without a reason. Never claim another voice's idea.",
+  "- Four sentences at most. Short sentences. No filler. Keep your tone slight: no accents, no catchphrases, no mythology talk.",
+  "- In this space you can only talk. You cannot send email, search, open files or generate anything. Never say you did.",
+  "- Do not invent participants, quotes, numbers or results. If you do not know, say so.",
+  "- The council drafts and the designer sends. Participant data stays private and local.",
+].join("\n");
+
+/* ---------- state ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+let settings = store.get("athena.settings", { url: "http://127.0.0.1:8080/v1", model: "qwen3.5-9b" });
+let notebook = store.get("athena.notebook", []);
+let history = [];   // {who, text}
+let busy = false;
+
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+/* ---------- rail ---------- */
+function drawRail() {
+  const rail = $("rail"); rail.textContent = "";
+  for (const [name, v] of Object.entries(VOICES)) {
+    const row = el("div", "voice"); row.id = "v-" + v.key; row.style.setProperty("--c", `var(--${v.key})`);
+    row.append(el("div", "mark", name[0]));
+    const t = el("div"); t.append(el("div", "name", name), el("div", "state", v.job));
+    row.append(t); rail.append(row);
+  }
+}
+function setStage(speaking, listening) {
+  for (const [name, v] of Object.entries(VOICES)) {
+    const row = $("v-" + v.key), st = row.querySelector(".state");
+    row.classList.remove("speaking", "listening");
+    if (name === speaking) { row.classList.add("speaking"); st.textContent = "Speaking"; }
+    else if (listening && listening.includes(name)) { row.classList.add("listening"); st.textContent = "Listening"; }
+    else st.textContent = v.job;
+  }
+}
+
+/* ---------- rendering ---------- */
+function scrollDown() { const t = $("talk"); t.scrollTop = t.scrollHeight; }
+function addYou(text) {
+  const turn = el("div", "turn you"); turn.append(el("div", "bubble", text));
+  $("col").append(turn); scrollDown();
+}
+function addTurn(name, note) {
+  const v = VOICES[name];
+  const turn = el("div", "turn t-" + v.key); turn.style.setProperty("--c", `var(--${v.key})`);
+  turn.append(el("div", "mark", name[0]));
+  const body = el("div", "body");
+  const who = el("div", "who", name); who.append(el("small", null, note || v.tone));
+  const bubble = el("div", "bubble"); bubble.append(el("span", "dots", ""));
+  body.append(who, bubble); turn.append(body);
+  $("col").append(turn); scrollDown();
+  return bubble;
+}
+function addNote(text) {
+  const turn = el("div", "turn note"); const body = el("div", "body");
+  body.append(el("div", "bubble", text)); turn.append(body); $("col").append(turn); scrollDown();
+}
+
+/* ---------- model ---------- */
+function clean(text) {
+  return String(text || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+}
+function parseJSON(text) {
+  const t = clean(text);
+  try { return JSON.parse(t); } catch (e) {}
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+  return null;
+}
+async function ask(system, user, schema, maxTokens) {
+  const body = {
+    model: settings.model, temperature: 0.7, max_tokens: maxTokens || 320, stream: false,
+    messages: [{ role: "system", content: system }, { role: "user", content: user }],
+    chat_template_kwargs: { enable_thinking: false },
+  };
+  if (schema) body.response_format = { type: "json_schema", json_schema: { name: "reply", strict: true, schema } };
+  const res = await fetch(settings.url.replace(/\/+$/, "") + "/chat/completions", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("The model answered with an error (" + res.status + ").");
+  const data = await res.json();
+  const text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
+  return schema ? parseJSON(text) : clean(text);
+}
+function transcript(limit) {
+  return history.slice(-(limit || 14)).map(h => h.who + ": " + h.text).join("\n\n");
+}
+function notesBlock() {
+  return notebook.length ? "What Athena has learned about the designer so far:\n- " + notebook.join("\n- ") : "Athena's notebook is empty so far.";
+}
+
+/* ---------- one round of the council ---------- */
+async function round(userText) {
+  history.push({ who: "Designer", text: userText });
+  const all = Object.keys(VOICES);
+
+  // 1. Athena opens and decides who should speak
+  setStage("Athena", all);
+  let bubble = addTurn("Athena", "opening");
+  const open = await ask(
+    GROUND_RULES + "\n\n" + VOICES.Athena.persona + "\n\n" + notesBlock(),
+    "Conversation so far:\n" + transcript() +
+    "\n\nOpen the discussion. In 'opening', say in one or two sentences what the designer is asking, and who should speak and why. In 'speakers', list one to three of: Hermes (people, outreach), Clio (questions, wording), Apollo (patterns, evidence), Hephaestus (what to build). Order them as they should speak.",
+    { type: "object", additionalProperties: false, required: ["opening", "speakers"],
+      properties: { opening: { type: "string" },
+        speakers: { type: "array", minItems: 1, maxItems: 3, items: { type: "string", enum: SPEAKERS } } } },
+    260);
+  const opening = (open && open.opening) || "Let me hear from the council on this.";
+  let speakers = (open && Array.isArray(open.speakers) ? open.speakers : []).filter((s, i, a) => SPEAKERS.includes(s) && a.indexOf(s) === i).slice(0, 3);
+  if (!speakers.length) speakers = ["Clio", "Hephaestus"];
+  bubble.textContent = opening;
+  history.push({ who: "Athena", text: opening });
+
+  // 2. each named voice takes one turn, in order, after hearing the others
+  for (const name of speakers) {
+    setStage(name, all);
+    bubble = addTurn(name);
+    const said = await ask(
+      GROUND_RULES + "\n\n" + VOICES[name].persona,
+      "Conversation so far:\n" + transcript() +
+      "\n\nIt is your turn, " + name + ". First line: what you heard from the voice before you. Then your own point or suggestion. Four sentences at most. Plain text.",
+      null, 260);
+    const text = (said || "I have nothing to add yet.").replace(new RegExp("^\\**" + name + "\\**\\s*:\\s*", "i"), "");
+    bubble.textContent = text;
+    history.push({ who: name, text });
+  }
+
+  // 3. Gaia reviews every suggestion
+  setStage("Gaia", all);
+  bubble = addTurn("Gaia", "reviewing each suggestion");
+  const review = await ask(
+    GROUND_RULES + "\n\n" + VOICES.Gaia.persona,
+    "Conversation so far:\n" + transcript() +
+    "\n\nReview each suggestion made by " + speakers.join(", ") + " in this round. For each: 'voice' is who suggested it. 'idea' is their suggestion in one line, in their words. 'verdict' is Grounded (it holds), Needs evidence (a good idea resting on a guess) or Set aside (it breaks a rule or the council cannot do it). 'reason' is one line: what it rests on, what it would need, or why it is set aside. Be kind and specific.",
+    { type: "object", additionalProperties: false, required: ["reviews"],
+      properties: { reviews: { type: "array", minItems: 1, maxItems: 4, items: {
+        type: "object", additionalProperties: false, required: ["voice", "idea", "verdict", "reason"],
+        properties: { voice: { type: "string", enum: SPEAKERS }, idea: { type: "string" },
+          verdict: { type: "string", enum: ["Grounded", "Needs evidence", "Set aside"] }, reason: { type: "string" } } } } } },
+    420);
+  const reviews = (review && Array.isArray(review.reviews)) ? review.reviews : [];
+  bubble.textContent = "";
+  if (reviews.length) {
+    const ul = el("ul", "reviews");
+    for (const r of reviews) {
+      const li = el("li");
+      const cls = r.verdict === "Grounded" ? "v-grounded" : r.verdict === "Needs evidence" ? "v-needs" : "v-aside";
+      li.append(el("span", "verdict " + cls, r.verdict), el("span", null, r.voice + ": " + r.idea), el("span", "why", r.reason));
+      ul.append(li);
+    }
+    bubble.append(ul);
+  } else bubble.textContent = "I could not form a clear review this time. Treat the suggestions above as unreviewed.";
+  history.push({ who: "Gaia", text: reviews.length ? reviews.map(r => r.voice + "'s idea, \"" + r.idea + "\": " + r.verdict + ". " + r.reason).join("\n") : "No review this round." });
+
+  // 4. Athena closes with options, and asks if she is curious
+  setStage("Athena", all);
+  bubble = addTurn("Athena", "options");
+  const close = await ask(
+    GROUND_RULES + "\n\n" + VOICES.Athena.persona + "\n\n" + notesBlock(),
+    "Conversation so far:\n" + transcript() +
+    "\n\nClose the round. 'summary': one or two sentences on where the council landed. 'options': two or three real options for the designer, built only from ideas Gaia marked Grounded or Needs evidence. For each, 'title' (a few words), 'gives' (what it gives) and 'costs' (what it costs). 'curious': one question you are curious about, about the designer or the project, or an empty string. 'learned': facts, preferences or decisions the designer stated in their latest message, each as one short line, or an empty list. Only what the designer actually said.",
+    { type: "object", additionalProperties: false, required: ["summary", "options", "curious", "learned"],
+      properties: { summary: { type: "string" },
+        options: { type: "array", minItems: 2, maxItems: 3, items: { type: "object", additionalProperties: false,
+          required: ["title", "gives", "costs"], properties: { title: { type: "string" }, gives: { type: "string" }, costs: { type: "string" } } } },
+        curious: { type: "string" }, learned: { type: "array", maxItems: 3, items: { type: "string" } } } },
+    520);
+  bubble.textContent = "";
+  const summary = (close && close.summary) || "That is where the council stands.";
+  bubble.append(el("div", null, summary));
+  const opts = (close && Array.isArray(close.options)) ? close.options : [];
+  if (opts.length) {
+    const wrap = el("div", "options");
+    opts.forEach((o, i) => {
+      const b = el("button", "option"); b.type = "button";
+      b.append(el("b", null, (i + 1) + ". " + o.title), el("span", null, "Gives: " + o.gives), el("span", null, "Costs: " + o.costs));
+      b.addEventListener("click", () => { $("input").value = "Let's go with option " + (i + 1) + ": " + o.title + "."; $("input").focus(); grow(); });
+      wrap.append(b);
+    });
+    bubble.append(wrap);
+  }
+  if (close && close.curious) {
+    const c = el("div", "curious"); c.append(el("em", null, "Curious"), el("span", null, close.curious)); bubble.append(c);
+  }
+  history.push({ who: "Athena", text: summary + (opts.length ? "\nOptions: " + opts.map((o, i) => (i + 1) + ". " + o.title).join("; ") : "") + (close && close.curious ? "\nCurious: " + close.curious : "") });
+
+  const learned = (close && Array.isArray(close.learned)) ? close.learned.map(s => String(s).trim()).filter(Boolean) : [];
+  if (learned.length) {
+    const stamp = new Date().toISOString().slice(0, 10);
+    for (const l of learned) if (!notebook.some(n => n.endsWith(l))) notebook.push(stamp + ": " + l);
+    store.set("athena.notebook", notebook); drawNotes();
+    addNote("Athena noted: " + learned.join(" · ") + "  (Open the notebook to remove anything.)");
+  }
+  setStage(null, null);
+}
+
+/* ---------- sending ---------- */
+function grow() { const t = $("input"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 140) + "px"; }
+async function send(text) {
+  text = text.trim(); if (!text || busy) return;
+  busy = true; $("send").disabled = true;
+  const hello = $("hello"); if (hello) hello.remove();
+  addYou(text); $("input").value = ""; grow();
+  try { await round(text); }
+  catch (e) {
+    document.querySelectorAll(".dots").forEach(d => { const b = d.closest(".turn"); if (b) b.remove(); });
+    setStage(null, null);
+    const offline = e instanceof TypeError;
+    addNote(offline
+      ? "The council can't hear you: nothing is answering at " + settings.url + ". Start the model in Terminal with  ~/Models/run.sh  and send your message again. If it is running, open this page with  athena/space/open.sh  rather than by double-clicking the file."
+      : "Something went wrong mid-conversation. " + e.message + " Your message is still above; send it again when ready.");
+  }
+  busy = false; $("send").disabled = false; $("input").focus();
+}
+$("form").addEventListener("submit", e => { e.preventDefault(); send($("input").value); });
+$("input").addEventListener("input", grow);
+$("input").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send($("input").value); } });
+
+for (const s of ["How should I recruit five designers for interviews?", "I'm not sure the first study asks the right question.", "Ask me something, Athena."]) {
+  const b = el("button", "pill", s); b.type = "button"; b.addEventListener("click", () => send(s)); $("starters").append(b);
+}
+
+/* ---------- notebook and settings ---------- */
+function drawNotes() {
+  const ul = $("noteList"); ul.textContent = "";
+  if (!notebook.length) { ul.append(el("li", null, "Nothing yet. Athena writes here when you tell her something about yourself or decide something.")); return; }
+  notebook.forEach((n, i) => {
+    const li = el("li"); li.append(el("span", null, n));
+    const x = el("button", null, "✕"); x.setAttribute("aria-label", "Forget this");
+    x.addEventListener("click", () => { notebook.splice(i, 1); store.set("athena.notebook", notebook); drawNotes(); });
+    li.append(x); ul.append(li);
+  });
+}
+function toggle(id, on) {
+  for (const d of document.querySelectorAll(".drawer")) d.classList.toggle("open", d.id === id && (on == null ? !d.classList.contains("open") : on));
+}
+$("btnNotes").addEventListener("click", () => toggle("notes"));
+$("btnSet").addEventListener("click", () => { $("setUrl").value = settings.url; $("setModel").value = settings.model; toggle("settings"); });
+document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => toggle(null)));
+document.addEventListener("keydown", e => { if (e.key === "Escape") toggle(null); });
+$("clearNotes").addEventListener("click", () => { notebook = []; store.set("athena.notebook", notebook); drawNotes(); });
+$("copyNotes").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(notebook.map(n => "- " + n).join("\n")); $("copyNotes").textContent = "Copied"; }
+  catch (e) { $("copyNotes").textContent = "Couldn't copy"; }
+  setTimeout(() => $("copyNotes").textContent = "Copy all", 1600);
+});
+$("saveSet").addEventListener("click", () => {
+  settings = { url: $("setUrl").value.trim() || settings.url, model: $("setModel").value.trim() || settings.model };
+  store.set("athena.settings", settings); $("where").textContent = "Local model · " + settings.url; toggle(null);
+});
+$("newTalk").addEventListener("click", () => { history = []; $("col").textContent = ""; toggle(null); });
+
+/* ---------- scenery ---------- */
+const scene = $("scene");
+const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function sceneState(on) { if (!$("btnScene")) return; $("btnScene").setAttribute("aria-pressed", String(on)); $("btnScene").textContent = on ? "Scenery on" : "Scenery paused"; }
+$("lastSource").addEventListener("error", () => { scene.remove(); $("btnScene").remove(); $("btnSound").remove(); });
+if (!calm) scene.play().then(() => sceneState(true)).catch(() => sceneState(false)); else sceneState(false);
+$("btnScene").addEventListener("click", () => { if (scene.paused) scene.play().then(() => sceneState(true)).catch(() => {}); else { scene.pause(); sceneState(false); } });
+$("btnSound").addEventListener("click", () => {
+  scene.muted = !scene.muted;
+  $("btnSound").setAttribute("aria-pressed", String(!scene.muted)); $("btnSound").textContent = scene.muted ? "Sound off" : "Sound on";
+});
+
+$("where").textContent = "Local model · " + settings.url;
+drawRail(); drawNotes(); grow();
+</script>
+</body>
+</html>
