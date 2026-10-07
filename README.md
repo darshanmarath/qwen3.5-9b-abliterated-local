@@ -88,6 +88,11 @@ and Higgsfield. Start with [`athena/README.md`](athena/README.md).
 
 ## What it looks like
 
+**The model running locally.** llama.cpp's built-in chat page at
+`http://127.0.0.1:8080`, with Qwen3.5 9B loaded on a MacBook.
+
+![llama.cpp chat page with the Qwen3.5 9B model loaded](docs/images/model-running.png)
+
 **Meet Athena**, the scripted first meeting embedded in the portfolio case
 study. A red ring forms around each voice as it speaks.
 
